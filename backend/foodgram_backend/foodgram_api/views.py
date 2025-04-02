@@ -1,4 +1,4 @@
-from rest_framework.viewsets import ViewSet
+from rest_framework.viewsets import ViewSet, ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
@@ -10,8 +10,9 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from users.models import MyUser, Subscription
+from .models import Tag
 from .pagination import CustomPagination
-from .serializers import UserRegistraionSerializer, UserProfileSerializer, AvatarSerializer, PasswordChangeSerializer
+from .serializers import UserRegistraionSerializer, UserProfileSerializer, AvatarSerializer, PasswordChangeSerializer, TagSerializer
 
 class UserViewSet(ViewSet):
     """
@@ -123,5 +124,12 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Token.DoesNotExist:
             return Response({"detail": "Некорректный токен."}, status=status.HTTP_400_BAD_REQUEST)
-        
 
+
+class TagViewSet(ModelViewSet):
+    """
+    ViewSet для работы с тегами.
+    """
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    http_method_names = ['get']

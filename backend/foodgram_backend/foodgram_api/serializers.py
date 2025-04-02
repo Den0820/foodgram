@@ -2,6 +2,7 @@ from django.core import validators
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from django.contrib.auth.password_validation import validate_password
+from .models import Tag
 
 
 import base64
@@ -102,3 +103,9 @@ class PasswordChangeSerializer(serializers.Serializer):
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
         user.save()
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'name', 'slug')
