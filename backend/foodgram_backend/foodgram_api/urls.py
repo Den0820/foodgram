@@ -1,16 +1,12 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from rest_framework.authtoken import views
-
-from .views import AuthView, CustomAuthToken, LogoutView, SubscriptionViewSet
+from .views import CustomAuthToken, LogoutView, UserViewSet
 
 router = DefaultRouter()
-router.register(r'subscriptions', SubscriptionViewSet, basename='subscription')
-
+router.register(r'users', UserViewSet, basename='user')
 
 urlpatterns = [
-    path('users/', AuthView.as_view()),
+    path('', include(router.urls)),
     path('auth/token/login/', CustomAuthToken.as_view()),
     path('auth/token/logout/', LogoutView.as_view()),
-    path('api/', include(router.urls)),
 ]

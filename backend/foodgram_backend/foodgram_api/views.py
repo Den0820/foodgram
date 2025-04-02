@@ -1,25 +1,103 @@
-from django.shortcuts import render
-from rest_framework import generics, status
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from users.models import MyUser, Subscription
-from .serializers import UserRegistraionSerializer, SubscriptionSerializer
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
+from rest_framework.views import APIView
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.contrib.auth import update_session_auth_hash
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
+from rest_framework import status
+from users.models import MyUser, Subscription
+from .pagination import CustomPagination
+from .serializers import UserRegistraionSerializer, UserProfileSerializer, AvatarSerializer, PasswordChangeSerializer
 
-
-class AuthView(generics.ListCreateAPIView):
-    queryset = MyUser.objects.all()
-    serializer_class = UserRegistraionSerializer
+class UserViewSet(ViewSet):
+    """
+    ViewSet для работы с пользователями: регистрация, авторизация, профили.
+    """
     permission_classes = [AllowAny]
+
+    def list(self, request):
+        """
+        Эндпоинт GET /api/users/
+        Возвращает список пользователей с поддержкой пагинации.
+        """
+        queryset = MyUser.objects.all()
+        paginator = CustomPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request)
+        serializer = UserProfileSerializer(paginated_queryset, many=True, context={'request': request})
+        return paginator.get_paginated_response(serializer.data)
+
+    def create(self, request):
+        """
+        Эндпоинт POST /api/users/
+        Регистрация нового пользователя.
+        """
+        serializer = UserRegistraionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        """
+        Эндпоинт GET /api/users/<id>/
+        Получение публичного профиля пользователя.
+        """
+        user = get_object_or_404(MyUser, pk=pk)
+        serializer = UserProfileSerializer(user, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        """
+        Эндпоинт GET /api/users/me/
+        Получение данных текущего пользователя.
+        """
+        serializer = UserProfileSerializer(request.user, context={'request': request})
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['put', 'delete'], permission_classes=[IsAuthenticated], url_path='me/avatar')
+    def avatar(self, request):
+        """
+        Эндпоинт PUT и DELETE /api/users/me/avatar/
+        Добавление или удаление аватара текущего пользователя.
+        """
+        user = request.user
+        if request.method == 'PUT':
+            if user.avatar:
+                user.avatar.delete(save=False)  # Удаляем старый файл, если он существует
+            serializer = AvatarSerializer(user, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        elif request.method == 'DELETE':
+            if user.avatar:
+                user.avatar.delete(save=False)  # Удаляем файл
+            user.avatar = None
+            user.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def set_password(self, request):
+        """
+        Эндпоинт POST /api/users/set_password/
+        Изменение пароля текущего пользователя.
+        """
+        serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CustomAuthToken(ObtainAuthToken):
+    """
+    ViewSet для авторизации пользователя путем выдачи токена.
+    """
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data,
@@ -33,6 +111,10 @@ class CustomAuthToken(ObtainAuthToken):
 
 
 class LogoutView(APIView):
+    """
+    ViewSet для завершения сессии текущего пользователя.
+    """
+
     permission_classes = [IsAuthenticated]
 
     def delete(self, request):
@@ -43,84 +125,3 @@ class LogoutView(APIView):
             return Response({"detail": "Некорректный токен."}, status=status.HTTP_400_BAD_REQUEST)
         
 
-
-class UserViewSet(ViewSet):
-    permission_classes = [AllowAny]
-
-    # Эндпоинт для получения профиля пользователя
-    def retrieve(self, request, pk=None):
-        user = get_object_or_404(MyUser, pk=pk)
-        return Response({
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-        }, status=status.HTTP_200_OK)
-
-    # Эндпоинт для текущего пользователя
-    @action(detail=False, methods=['get'], url_path='me')
-    def get_current_user(self, request):
-        user = request.user  # Текущий пользователь берется из токена
-        return Response({
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-        }, status=status.HTTP_200_OK)
-
-    # Эндпоинт для изменения пароля
-    @action(detail=False, methods=['post'], url_path='set_password')
-    def set_password(self, request):
-        current_password = request.data.get("current_password")
-        new_password = request.data.get("new_password")
-
-        if not current_password or not new_password:
-            return Response({"detail": "Оба поля обязательны."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not request.user.check_password(current_password):
-            return Response({"detail": "Неверный текущий пароль."}, status=status.HTTP_400_BAD_REQUEST)
-
-        request.user.set_password(new_password)
-        request.user.save()
-        update_session_auth_hash(request, request.user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # Эндпоинт для работы с аватаром
-    @action(detail=False, methods=['put'], url_path='me/avatar')
-    def update_avatar(self, request):
-        avatar = request.data.get('avatar')
-        if avatar:
-            request.user.avatar = avatar
-            request.user.save()
-            return Response({"avatar": request.user.avatar.url}, status=status.HTTP_200_OK)
-        return Response({"detail": "Некорректные данные."}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class SubscriptionViewSet(ViewSet):
-    permission_classes = [IsAuthenticated]
-
-    def create(self, request):
-        serializer = SubscriptionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        subscribed_to = serializer.validated_data['subscribed_to']
-        subscription, created = Subscription.objects.get_or_create(
-            subscriber=request.user,
-            subscribed_to=subscribed_to
-        )
-        if created:
-            return Response({'detail': 'Подписка успешно создана'}, status=201)
-        return Response({'detail': 'Вы уже подписаны на этого пользователя'}, status=400)
-
-    def list(self, request):
-        subscriptions = Subscription.objects.filter(subscriber=request.user)
-        serializer = SubscriptionSerializer(subscriptions, many=True)
-        return Response(serializer.data)
-
-    def destroy(self, request, pk=None):
-        subscription = Subscription.objects.filter(id=pk, subscriber=request.user).first()
-        if subscription:
-            subscription.delete()
-            return Response({'detail': 'Подписка успешно удалена'}, status=204)
-        return Response({'detail': 'Подписка не найдена'}, status=404)

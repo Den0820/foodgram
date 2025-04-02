@@ -1,6 +1,8 @@
 from django.core import validators
 from rest_framework import serializers, status
 from rest_framework.response import Response
+from django.contrib.auth.password_validation import validate_password
+
 
 import base64
 
@@ -64,12 +66,39 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return value
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MyUser
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed', 'avatar')
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Subscription.objects.filter(subscriber=request.user, subscribed_to=obj).exists()
+        return False
+
+
+class AvatarSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         model = MyUser
-        fields = (
-            'email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed', 'avatar',
-            'image'
-        )
+        fields = ('avatar',)
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, validators=[validate_password])
+    current_password = serializers.CharField(write_only=True)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Неверный текущий пароль")
+        return value
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
