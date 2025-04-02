@@ -6,13 +6,14 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.authtoken.models import Token
+from rest_framework.filters import SearchFilter
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from users.models import MyUser, Subscription
-from .models import Tag
+from .models import Tag, Ingredient
 from .pagination import CustomPagination
-from .serializers import UserRegistraionSerializer, UserProfileSerializer, AvatarSerializer, PasswordChangeSerializer, TagSerializer
+from .serializers import UserRegistraionSerializer, UserProfileSerializer, AvatarSerializer, PasswordChangeSerializer, TagSerializer, IngredientSerializer
 
 class UserViewSet(ViewSet):
     """
@@ -133,3 +134,14 @@ class TagViewSet(ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     http_method_names = ['get']
+
+
+class IngredientViewSet(ModelViewSet):
+    """
+    ViewSet для работы с ингредиентами.
+    """
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    http_method_names = ['get']
+    filter_backends = [SearchFilter]
+    search_fields = ['^name']

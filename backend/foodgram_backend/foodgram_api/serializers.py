@@ -2,7 +2,7 @@ from django.core import validators
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from django.contrib.auth.password_validation import validate_password
-from .models import Tag
+from .models import Tag, Ingredient
 
 
 import base64
@@ -109,3 +109,9 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ('id', 'name', 'slug')
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = ('id', 'name', 'measurement_unit')
