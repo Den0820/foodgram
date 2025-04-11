@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-^pba@$3ez@21d#9n_a8$v11&)x2um9$3o@&*vs_je)_z*-yv6q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1']
 
 
 # Application definition
@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_filters',
     'rest_framework',
+    'djoser',
 ]
 
 MIDDLEWARE = [
@@ -133,4 +134,18 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'EXCEPTION_HANDLER': 'foodgram_api.permissions.custom_exception_handler',
+}
+
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'HIDE_USERS': False,
+    'PERMISSIONS': {
+        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
+        'user_list': ['rest_framework.permissions.AllowAny'],
+    },
+    'SERIALIZERS': {
+        'user': 'foodgram_api.serializers.UserProfileSerializer',
+        'user_create': 'foodgram_api.serializers.UserRegistraionSerializer',
+        'current_user': 'foodgram_api.serializers.UserProfileSerializer',
+    },
 }

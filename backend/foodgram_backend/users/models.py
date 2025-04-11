@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import CASCADE, ForeignKey, Model
 from django.conf import settings
 
 
@@ -11,6 +10,16 @@ class MyUser(AbstractUser):
         default=None
     )
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name', 'password')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                name='unique_user',
+                fields=['email',],
+            ),
+        ]
 
 class Subscription(models.Model):
     subscriber = models.ForeignKey(

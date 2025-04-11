@@ -2,6 +2,7 @@ from django.core import validators
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from django.contrib.auth.password_validation import validate_password
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from .models import Tag, Ingredient, Recipe, RecipeIngredient
 
 
@@ -22,17 +23,20 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
-class UserRegistraionSerializer(serializers.ModelSerializer):
+class UserRegistraionSerializer(UserCreateSerializer):
+    password = serializers.CharField(
+        write_only=True
+    )
 
     class Meta:
         model = MyUser
         fields = (
             'email',
-            'id',
-            'username',
             'first_name',
+            'id',
             'last_name',
-            'password'
+            'password',
+            'username',
         )
         extra_kwargs = {
             'password': {'write_only': True},
@@ -40,6 +44,7 @@ class UserRegistraionSerializer(serializers.ModelSerializer):
             'first_name': {'required': True},
             'last_name': {'required': True},
         }
+
 
     def validate(self, data):
         if data.get('username') == 'me':
@@ -82,7 +87,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return obj.subscribed_to.recipes.count()
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -97,7 +102,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class AvatarSerializer(serializers.ModelSerializer):
-    avatar = Base64ImageField(required=False, allow_null=True)
+    avatar = Base64ImageField(required=True, allow_null=True)
 
     class Meta:
         model = MyUser
