@@ -68,12 +68,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = ['subscribed_to', 'recipes', 'recipes_count']
 
     def get_subscribed_to(self, obj):
+        user = obj.subscribed_to
         return {
-            "id": obj.subscribed_to.id,
-            "username": obj.subscribed_to.username,
-            "first_name": obj.subscribed_to.first_name,
-            "last_name": obj.subscribed_to.last_name,
-            "avatar": obj.subscribed_to.avatar.url if obj.subscribed_to.avatar else None,
+            "id": user.id,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "avatar": user.avatar.url if user.avatar else None,
         }
 
     def get_recipes(self, obj):
@@ -254,3 +255,35 @@ class CreateRecipeSerializer(RecipeSerializer):
         return RecipeSerializer(
             instance, context={'request': self.context.get('request')}
         ).data
+
+
+class SubscriptionCreateSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор подписки пользователя.
+    """
+
+    class Meta:
+        model = Subscription
+        fields = ('subscriber', 'subscribed_to')
+
+    def create(self, validated_data):
+        subscriber = validated_data['subscriber']
+        subscribed_to = validated_data['subscribed_to']
+
+        subscription = Subscription.objects.create(subscriber=subscriber, subscribed_to=subscribed_to)
+        return "Подписка успешно создана."
+
+    def validate(self, data):
+        subscriber = data.get('subscriber')
+        subscribed_to = data.get('subscribed_to')
+
+        if subscriber == subscribed_to:
+            raise serializers.ValidationError(
+                'Нельзя подписаться на самого себя.'
+            )
+
+        if Subscription.objects.filter(subscriber=subscriber, subscribed_to=subscribed_to).exists():
+            raise serializers.ValidationError(
+                'Вы уже подписаны на этого пользователя.'
+            )
+        return data

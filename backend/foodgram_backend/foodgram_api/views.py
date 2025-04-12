@@ -15,8 +15,8 @@ from djoser.views import UserViewSet
 from users.models import MyUser, Subscription
 from .models import Tag, Ingredient, Recipe, ShoppingCart, Favorite
 from .pagination import CustomPagination
-from .serializers import UserProfileSerializer, AvatarSerializer, PasswordChangeSerializer, TagSerializer, IngredientSerializer, RecipeSerializer, CreateRecipeSerializer, SubscriptionSerializer
-from .filters import RecipeFilter
+from .serializers import UserProfileSerializer, AvatarSerializer, PasswordChangeSerializer, TagSerializer, IngredientSerializer, RecipeSerializer, CreateRecipeSerializer, SubscriptionSerializer, SubscriptionCreateSerializer
+from .filters import RecipeFilter, IngredientFilter
 from .permissions import IsAuthorOrAdminOrReadOnly
 
 # class UserViewSet(ViewSet):
@@ -148,6 +148,7 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [AllowAny,]
     pagination_class = CustomPagination
+    lookup_field='pk'
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def me(self, request):
@@ -198,8 +199,8 @@ class CustomUserViewSet(UserViewSet):
         Получить список пользователей, на которых подписан текущий пользователь.
         """
         subscriptions = Subscription.objects.filter(subscriber=request.user)
-        paginator = CustomPagination()  # Используем экземпляр класса пагинации
-        page = paginator.paginate_queryset(subscriptions, request)  # Пагинация вручную
+        paginator = CustomPagination()
+        page = paginator.paginate_queryset(subscriptions, request)
         if page is not None:
             serializer = SubscriptionSerializer(page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
@@ -213,24 +214,32 @@ class CustomUserViewSet(UserViewSet):
         Подписаться на пользователя/
         Отписаться от пользователя.
         """
-        user = get_object_or_404(MyUser, pk=pk)
+        context = {'request': request}
+        subscriber = request.user.pk
+        subscribed_to = get_object_or_404(MyUser, pk=pk).pk
+        data = {
+            'subscriber': subscriber,
+            'subscribed_to': subscribed_to,
+        }
         if request.method == 'POST':
-            if user == request.user:
-                return Response({"error": "Нельзя подписаться на себя."}, status=status.HTTP_400_BAD_REQUEST)
+            serializer = SubscriptionCreateSerializer(data=data, context=context)
+            serializer.is_valid(raise_exception=True)
+            response_data = serializer.save()
+            return Response(
+                {'message': 'Подписка успешно создана.',
+                    'data': response_data},
+                status=status.HTTP_201_CREATED,
+            )
+        subscription = get_object_or_404(
+            Subscription, subscriber=subscriber,
+            subscribed_to=subscribed_to
+        )
+        subscription.delete()
+        return Response(
+            {'message': 'Подписка успешно удалена.'},
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
-            if Subscription.objects.filter(subscriber=request.user, subscribed_to=user).exists():
-                return Response({"error": "Вы уже подписаны на этого пользователя."}, status=status.HTTP_400_BAD_REQUEST)
-
-            subscription = Subscription.objects.create(subscriber=request.user, subscribed_to=user)
-            serializer = SubscriptionSerializer(subscription, context={'request': request})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        elif request.method == 'DELETE':
-            subscription = Subscription.objects.filter(subscriber=request.user, subscribed_to=user).first()
-            if not subscription:
-                return Response({"error": "Вы не подписаны на этого пользователя."}, status=status.HTTP_400_BAD_REQUEST)
-
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TagViewSet(ModelViewSet):
@@ -250,8 +259,8 @@ class IngredientViewSet(ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     http_method_names = ['get']
-    filter_backends = [SearchFilter]
-    search_fields = ['^name']
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
     permission_classes = [AllowAny,]
 
 
