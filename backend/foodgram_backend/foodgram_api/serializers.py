@@ -151,6 +151,15 @@ class RecipeIngredientSerializer(serializers.Serializer):
         model = RecipeIngredient
         fields = ['id', 'name', 'measurement_unit', 'amount']
 
+    def validate_amount(self, value):
+        """
+        Проверяет, что количество ингредиента больше минимального значения.
+        """
+        if value <= 0:
+            raise serializers.ValidationError(
+                'Количество ингредиента должно быть больше нуля.')
+        return value
+
 
 class RecipeSerializer(serializers.ModelSerializer):
     """
@@ -198,6 +207,18 @@ class CreateRecipeSerializer(RecipeSerializer):
     """
     Сериализатор для создания рецепта.
     """
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'ingredients',
+            'tags',
+            'image',
+            'name',
+            'text',
+            'cooking_time',
+        )
+
     ingredients = RecipeIngredientSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
@@ -223,6 +244,18 @@ class CreateRecipeSerializer(RecipeSerializer):
                     'Этот ингредиент уже добавлен.'
                 )
             ingredients.append(ingredient.get('id'))
+        return value
+    
+    def validate_cooking_time(self, value):
+        """
+        Проверка корректности времени
+        приготовления рецепта.
+        """
+
+        if value <= 0:
+            raise ValidationError(
+                f'Время приготовления должно быть больше 0 минут.'
+            )
         return value
 
     @staticmethod
