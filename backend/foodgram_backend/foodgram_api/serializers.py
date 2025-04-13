@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.contrib.auth.password_validation import validate_password
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from .models import Tag, Ingredient, Recipe, RecipeIngredient
+from rest_framework.validators import UniqueTogetherValidator
 
 
 import base64
@@ -56,36 +57,6 @@ class UserRegistraionSerializer(UserCreateSerializer):
                 'Пользователь с таким email уже существует'
             )
         return data
-
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    subscribed_to = serializers.SerializerMethodField()
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Subscription
-        fields = ['subscribed_to', 'recipes', 'recipes_count']
-
-    def get_subscribed_to(self, obj):
-        user = obj.subscribed_to
-        return {
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "avatar": user.avatar.url if user.avatar else None,
-        }
-
-    def get_recipes(self, obj):
-        recipes_limit = self.context['request'].query_params.get('recipes_limit')
-        recipes = obj.subscribed_to.recipes.all()
-        if recipes_limit:
-            recipes = recipes[:int(recipes_limit)]
-        return RecipeSerializer(recipes, many=True).data
-
-    def get_recipes_count(self, obj):
-        return obj.subscribed_to.recipes.count()
 
 
 class UserProfileSerializer(UserSerializer):
@@ -186,6 +157,15 @@ class RecipeSerializer(serializers.ModelSerializer):
             'tags', 'author', 'is_favorited', 'is_in_shopping_cart'
         )
 
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        super().__init__(*args, **kwargs)
+        if fields:
+            allowed = set(fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
     def get_ingredients(self, obj):
         ingredients = RecipeIngredient.objects.filter(recipe=obj.id)
         return RecipeIngredientSerializer(ingredients, many=True).data
@@ -230,8 +210,15 @@ class CreateRecipeSerializer(RecipeSerializer):
     )
 
     def validate_tags(self, value):
+        tags = []
         if not value:
             raise serializers.ValidationError('Добавьте теги.')
+        for tag in value:
+            if tag.id in tags:
+                raise serializers.ValidationError(
+                    'Этот тег уже добавлен.'
+                )
+            tags.append(tag.id)
         return value
 
     def validate_ingredients(self, value):
@@ -253,7 +240,7 @@ class CreateRecipeSerializer(RecipeSerializer):
         """
 
         if value <= 0:
-            raise ValidationError(
+            raise serializers.ValidationError(
                 f'Время приготовления должно быть больше 0 минут.'
             )
         return value
@@ -277,12 +264,26 @@ class CreateRecipeSerializer(RecipeSerializer):
         return recipe
 
     def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients', [])
+        tags = validated_data.pop('tags', [])
+        if not ingredients or not tags:
+            raise serializers.ValidationError('Ингредиенты или теги не указаны')
+        # Обновляем основные атрибуты рецепта
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Очищаем теги и ингредиенты
         instance.tags.clear()
         instance.ingredients.clear()
-        instance.tags.set(validated_data.pop('tags'))
-        ingredients = validated_data.pop('ingredients')
+
+        # Добавляем новые теги
+        instance.tags.set(tags)
+
+        # Обновляем ингредиенты
         self.create_ingredients(ingredients, instance)
-        return super().update(instance, validated_data)
+
+        return instance
 
     def to_representation(self, instance):
         return RecipeSerializer(
@@ -304,7 +305,7 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
         subscribed_to = validated_data['subscribed_to']
 
         subscription = Subscription.objects.create(subscriber=subscriber, subscribed_to=subscribed_to)
-        return "Подписка успешно создана."
+        return subscription
 
     def validate(self, data):
         subscriber = data.get('subscriber')
@@ -320,3 +321,52 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
                 'Вы уже подписаны на этого пользователя.'
             )
         return data
+
+    def to_representation(self, instance):
+        return SubscriptionSerializer(instance, context=self.context).data
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='subscribed_to.email', read_only=True)
+    id = serializers.IntegerField(source='subscribed_to.id', read_only=True)
+    username = serializers.CharField(source='subscribed_to.username', read_only=True)
+    first_name = serializers.CharField(source='subscribed_to.first_name', read_only=True)
+    last_name = serializers.CharField(source='subscribed_to.last_name', read_only=True)
+    is_subscribed = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(source='subscribed_to.avatar', read_only=True)
+    recipes_count = serializers.IntegerField(source='subscribed_to.recipes.count', read_only=True)
+    recipes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Subscription
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed', 'recipes', 'recipes_count', 'avatar')
+
+    def get_recipes(self, obj):
+        request = self.context['request']
+        limit = request.GET.get('recipes_limit')
+        recipes = obj.subscribed_to.recipes.all()  # Связь через related_name='recipes'
+        if limit:
+            try:
+                limit = int(limit)
+            except ValueError:
+                raise serializers.ValidationError('recipes_limit должен быть числом.')
+            recipes = recipes[:limit]
+        return RecipeSerializer(recipes, many=True, context=self.context, fields=('id', 'name', 'image', 'cooking_time')).data
+
+    def get_recipes_count(self, obj):
+        recipe_count = obj.subscribed_to.recipes.count()
+        if recipe_count <= 0:
+            return 0
+        return recipe_count
+
+    def get_is_subscribed(self, obj):
+        """
+        Проверяет, подписан ли текущий пользователь на данного пользователя.
+        """
+        request = self.context.get('request')
+        if not request or request.user.is_anonymous:
+            return False
+        return Subscription.objects.filter(
+            subscriber=request.user,
+            subscribed_to=obj.subscribed_to
+        ).exists()

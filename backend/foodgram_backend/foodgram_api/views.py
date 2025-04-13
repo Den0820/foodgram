@@ -19,126 +19,6 @@ from .serializers import UserProfileSerializer, AvatarSerializer, PasswordChange
 from .filters import RecipeFilter, IngredientFilter
 from .permissions import IsAuthorOrAdminOrReadOnly
 
-# class UserViewSet(ViewSet):
-#     """
-#     ViewSet для работы с пользователями: регистрация, авторизация, профили.
-#     """
-#     permission_classes = [AllowAny]
-
-#     def list(self, request):
-#         """
-#         Эндпоинт GET /api/users/
-#         Возвращает список пользователей с поддержкой пагинации.
-#         """
-#         queryset = MyUser.objects.all()
-#         paginator = CustomPagination()
-#         paginated_queryset = paginator.paginate_queryset(queryset, request)
-#         serializer = UserProfileSerializer(paginated_queryset, many=True, context={'request': request})
-#         return paginator.get_paginated_response(serializer.data)
-
-#     def create(self, request):
-#         """
-#         Эндпоинт POST /api/users/
-#         Регистрация нового пользователя.
-#         """
-#         serializer = UserRegistraionSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def retrieve(self, request, pk=None):
-#         """
-#         Эндпоинт GET /api/users/<id>/
-#         Получение публичного профиля пользователя.
-#         """
-#         user = get_object_or_404(MyUser, pk=pk)
-#         serializer = UserProfileSerializer(user, context={'request': request})
-#         return Response(serializer.data)
-
-#     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-#     def me(self, request):
-#         """
-#         Эндпоинт GET /api/users/me/
-#         Получение данных текущего пользователя.
-#         """
-#         serializer = UserProfileSerializer(request.user, context={'request': request})
-#         return Response(serializer.data)
-    
-#     @action(detail=False, methods=['put', 'delete'], permission_classes=[IsAuthenticated], url_path='me/avatar')
-#     def avatar(self, request):
-#         """
-#         Эндпоинт PUT и DELETE /api/users/me/avatar/
-#         Добавление или удаление аватара текущего пользователя.
-#         """
-#         user = request.user
-#         if request.method == 'PUT':
-#             if user.avatar:
-#                 user.avatar.delete(save=False)  # Удаляем старый файл, если он существует
-#             serializer = AvatarSerializer(user, data=request.data)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data, status=status.HTTP_200_OK)
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#         elif request.method == 'DELETE':
-#             if user.avatar:
-#                 user.avatar.delete(save=False)  # Удаляем файл
-#             user.avatar = None
-#             user.save()
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-        
-#     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
-#     def set_password(self, request):
-#         """
-#         Эндпоинт POST /api/users/set_password/
-#         Изменение пароля текущего пользователя.
-#         """
-#         serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-#     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='subscriptions')
-#     def subscriptions(self, request):
-#         """
-#         Получить список пользователей, на которых подписан текущий пользователь.
-#         """
-#         subscriptions = Subscription.objects.filter(subscriber=request.user)
-#         paginator = CustomPagination()  # Используем экземпляр класса пагинации
-#         page = paginator.paginate_queryset(subscriptions, request)  # Пагинация вручную
-#         if page is not None:
-#             serializer = SubscriptionSerializer(page, many=True, context={'request': request})
-#             return paginator.get_paginated_response(serializer.data)
-    
-#         serializer = SubscriptionSerializer(subscriptions, many=True, context={'request': request})
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-#     @action(detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated], url_path='subscribe')
-#     def subscribe(self, request, pk=None):
-#         """
-#         Подписаться на пользователя/
-#         Отписаться от пользователя.
-#         """
-#         user = get_object_or_404(MyUser, pk=pk)
-#         if request.method == 'POST':
-#             if user == request.user:
-#                 return Response({"error": "Нельзя подписаться на себя."}, status=status.HTTP_400_BAD_REQUEST)
-
-#             if Subscription.objects.filter(subscriber=request.user, subscribed_to=user).exists():
-#                 return Response({"error": "Вы уже подписаны на этого пользователя."}, status=status.HTTP_400_BAD_REQUEST)
-
-#             subscription = Subscription.objects.create(subscriber=request.user, subscribed_to=user)
-#             serializer = SubscriptionSerializer(subscription, context={'request': request})
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         elif request.method == 'DELETE':
-#             subscription = Subscription.objects.filter(subscriber=request.user, subscribed_to=user).first()
-#             if not subscription:
-#                 return Response({"error": "Вы не подписаны на этого пользователя."}, status=status.HTTP_400_BAD_REQUEST)
-
-#             subscription.delete()
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class CustomUserViewSet(UserViewSet):
     """
@@ -148,7 +28,7 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [AllowAny,]
     pagination_class = CustomPagination
-    lookup_field='pk'
+    lookup_field = 'pk'
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def me(self, request):
@@ -193,6 +73,42 @@ class CustomUserViewSet(UserViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated], url_path='subscribe')
+    def subscribe(self, request, pk=None):
+        """
+        Подписаться на пользователя/
+        Отписаться от пользователя.
+        """
+        context = {'request': request}
+        subscriber = request.user.pk
+        subscribed_to = get_object_or_404(MyUser, pk=pk).pk
+        data = {
+            'subscriber': subscriber,
+            'subscribed_to': subscribed_to,
+        }
+        if request.method == 'POST':
+            serializer = SubscriptionCreateSerializer(data=data, context={'request': request})
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        elif request.method == 'DELETE':
+            subscription = Subscription.objects.filter(
+                subscriber=subscriber,
+                subscribed_to=subscribed_to
+            ).first()
+
+            if not subscription:
+                return Response(
+                    {'error': 'Подписка не найдена.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            subscription.delete()
+            return Response(
+                {'message': 'Подписка успешно удалена.'},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='subscriptions')
     def subscriptions(self, request):
         """
@@ -208,37 +124,43 @@ class CustomUserViewSet(UserViewSet):
         serializer = SubscriptionSerializer(subscriptions, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated], url_path='subscribe')
-    def subscribe(self, request, pk=None):
-        """
-        Подписаться на пользователя/
-        Отписаться от пользователя.
-        """
-        context = {'request': request}
-        subscriber = request.user.pk
-        subscribed_to = get_object_or_404(MyUser, pk=pk).pk
-        data = {
-            'subscriber': subscriber,
-            'subscribed_to': subscribed_to,
-        }
-        if request.method == 'POST':
-            serializer = SubscriptionCreateSerializer(data=data, context=context)
-            serializer.is_valid(raise_exception=True)
-            response_data = serializer.save()
-            return Response(
-                {'message': 'Подписка успешно создана.',
-                    'data': response_data},
-                status=status.HTTP_201_CREATED,
-            )
-        subscription = get_object_or_404(
-            Subscription, subscriber=subscriber,
-            subscribed_to=subscribed_to
-        )
-        subscription.delete()
-        return Response(
-            {'message': 'Подписка успешно удалена.'},
-            status=status.HTTP_204_NO_CONTENT,
-        )
+    # @action(detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated], url_path='subscribe')
+    # def subscribe(self, request, pk=None):
+    #     """
+    #     Подписаться на пользователя/
+    #     Отписаться от пользователя.
+    #     """
+    #     context = {'request': request}
+    #     subscriber = request.user.pk
+    #     subscribed_to = get_object_or_404(MyUser, pk=pk).pk
+    #     data = {
+    #         'subscriber': subscriber,
+    #         'subscribed_to': subscribed_to,
+    #     }
+    #     if request.method == 'POST':
+    #         serializer = SubscriptionCreateSerializer(data=data, context=context)
+    #         serializer.is_valid(raise_exception=True)
+    #         response_data = serializer.save()
+    #         return Response(
+    #             {'message': 'Подписка успешно создана.',
+    #                 'data': response_data},
+    #             status=status.HTTP_201_CREATED,
+    #         )
+    #     subscription = Subscription.objects.filter(
+    #         subscriber=subscriber,
+    #         subscribed_to=subscribed_to
+    #     ).first()
+
+    #     if not subscription:
+    #         return Response(
+    #             {'error': 'Подписка не найдена.'},
+    #             status=status.HTTP_400_BAD_REQUEST,
+    #         )
+    #     subscription.delete()
+    #     return Response(
+    #         {'message': 'Подписка успешно удалена.'},
+    #         status=status.HTTP_204_NO_CONTENT,
+    #     )
 
 
 
@@ -265,20 +187,22 @@ class IngredientViewSet(ModelViewSet):
 
 
 class RecipeViewSet(ModelViewSet):
-    """Вывод работы с рецептами."""
+    """
+    Вывод работы с рецептами.
+    """
     queryset = Recipe.objects.all()
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend, ]
     filterset_class = RecipeFilter
     search_fields = ('^name', )
-    permission_classes = (IsAuthorOrAdminOrReadOnly, )
+    permission_classes = [IsAuthorOrAdminOrReadOnly,]
 
     def get_serializer_class(self):
         if self.action == 'list':
             return RecipeSerializer
         return CreateRecipeSerializer
     
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='get-link')
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny], url_path='get-link')
     def get_link(self, request, pk=None):
         recipe = self.get_object()
         short_link = f"https://foodgram.example.org/s/{recipe.id}"
