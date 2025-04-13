@@ -1,7 +1,6 @@
 import os
-from dotenv import load_dotenv
 from pathlib import Path
-
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -14,13 +13,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-^pba@$3ez@21d#9n_a8$v11&)x2um9$3o@&*vs_je)_z*-yv6q'
-#SECRET_KEY = os.getenv('SECRET_KEY', 'test_key')
+# SECRET_KEY = os.getenv('SECRET_KEY', 'test_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1']
-#ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
+# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
 
 
 # Application definition
@@ -89,7 +88,7 @@ DATABASES = {
 #         'USER': os.getenv('POSTGRES_USER', 'django'),
 #         'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
 #         'HOST': os.getenv('DB_HOST', ''),
-#         'PORT': os.getenv('DB_PORT', 5432)
+#         'PORT': os.getenv('DB_PORT', 5432),
 #     }
 # }
 
@@ -136,6 +135,7 @@ STATIC_ROOT = BASE_DIR / 'collected_static'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
@@ -147,7 +147,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
