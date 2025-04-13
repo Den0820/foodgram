@@ -28,10 +28,14 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recipes")
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="recipes"
+    )
     name = models.CharField(max_length=256)
     text = models.TextField()
-    cooking_time = models.PositiveIntegerField()  # Время приготовления в минутах
+    cooking_time = models.PositiveIntegerField()
     image = models.ImageField(upload_to="recipes/images/")
     tags = models.ManyToManyField(Tag, related_name="recipes")
     ingredients = models.ManyToManyField(
@@ -49,8 +53,16 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="recipe_ingredients")
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name="ingredient_recipes")
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="recipe_ingredients"
+    )
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name="ingredient_recipes"
+    )
     amount = models.PositiveIntegerField()
 
     class Meta:
@@ -63,8 +75,16 @@ class RecipeIngredient(models.Model):
 
 
 class Favorite(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites")
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="favorited_by")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="favorites"
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="favorited_by"
+    )
 
     class Meta:
         unique_together = ('user', 'recipe')
@@ -76,8 +96,16 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="shopping_cart")
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="in_shopping_cart")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="shopping_cart"
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="in_shopping_cart"
+    )
 
     class Meta:
         unique_together = ('user', 'recipe')
@@ -85,4 +113,5 @@ class ShoppingCart(models.Model):
         verbose_name_plural = "Списки покупок"
 
     def __str__(self):
-        return f"{self.user.username} добавил {self.recipe.name} в список покупок"
+        return f"{self.user.username} добавил {self.recipe.name} \
+            в список покупок"

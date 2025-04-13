@@ -1,12 +1,19 @@
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
+
 class CustomPagination(PageNumberPagination):
-    page_size = 10  # Количество объектов по умолчанию
-    page_size_query_param = 'limit'  # Позволяет изменять количество объектов через параметр запроса
-    max_page_size = 100  # Максимальное количество объектов на странице
+    """
+    Кастомный класс пагинации для настройки количества объектов на странице.
+    """
+    page_size = 10
+    page_size_query_param = 'limit'
+    max_page_size = 100
 
     def get_paginated_response(self, data):
+        """
+        Возвращает ответ с пагинацией.
+        """
         return Response({
             'count': self.page.paginator.count,
             'next': self.get_next_link(),

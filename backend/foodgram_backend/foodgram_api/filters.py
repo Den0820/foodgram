@@ -1,4 +1,5 @@
 from django_filters import rest_framework as filters
+
 from .models import Recipe, Ingredient, Tag
 
 
@@ -6,7 +7,6 @@ class IngredientFilter(filters.FilterSet):
     """
     Фильтрация ингредиентов по их названию.
     """
-
     name = filters.CharFilter(
         field_name='name',
         lookup_expr='istartswith',
@@ -22,10 +22,15 @@ class RecipeFilter(filters.FilterSet):
     Фильтр для рецептов.
     """
     is_favorited = filters.BooleanFilter(method='filter_is_favorited')
-    is_in_shopping_cart = filters.BooleanFilter(method='filter_is_in_shopping_cart')
+    is_in_shopping_cart = filters.BooleanFilter(
+        method='filter_is_in_shopping_cart'
+    )
     author = filters.NumberFilter(field_name='author__id')
-    tags = filters.ModelMultipleChoiceFilter(queryset=Tag.objects.all(), field_name='tags__slug', to_field_name='slug')
-
+    tags = filters.ModelMultipleChoiceFilter(
+        queryset=Tag.objects.all(),
+        field_name='tags__slug',
+        to_field_name='slug',
+    )
 
     class Meta:
         model = Recipe
@@ -41,7 +46,8 @@ class RecipeFilter(filters.FilterSet):
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         """
-        Фильтрация по рецептам, добавленным в список покупок текущего пользователя.
+        Фильтрация по рецептам, добавленным в
+        список покупок текущего пользователя.
         """
         if value and self.request.user.is_authenticated:
             return queryset.filter(in_shopping_cart__user=self.request.user)
