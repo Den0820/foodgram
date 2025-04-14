@@ -1,6 +1,3 @@
-import base64
-
-from django.core.files.base import ContentFile
 from django.contrib.auth.password_validation import validate_password
 
 from drf_extra_fields.fields import Base64ImageField
