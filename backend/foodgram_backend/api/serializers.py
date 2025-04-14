@@ -3,23 +3,12 @@ import base64
 from django.core.files.base import ContentFile
 from django.contrib.auth.password_validation import validate_password
 
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from djoser.serializers import UserCreateSerializer, UserSerializer
 
-from .models import Tag, Ingredient, Recipe, RecipeIngredient
+from .models import Ingredient, Recipe, RecipeIngredient, Tag
 from users.models import MyUser, Subscription
-
-
-class Base64ImageField(serializers.ImageField):
-    """
-    Поле для обработки изображений в формате Base64.
-    """
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        return super().to_internal_value(data)
 
 
 class UserRegistraionSerializer(UserCreateSerializer):
@@ -101,7 +90,7 @@ class PasswordChangeSerializer(serializers.Serializer):
     def validate_current_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
-            raise serializers.ValidationError("Неверный текущий пароль")
+            raise serializers.ValidationError('Неверный текущий пароль')
         return value
 
     def save(self, **kwargs):
@@ -177,7 +166,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     """
     Сериализатор для отображения списка рецептов.
     """
-    image = Base64ImageField()
+    image = Base64ImageField(required=True, allow_null=False)
     author = UserProfileSerializer()
     tags = TagSerializer(many=True)
     is_favorited = serializers.SerializerMethodField()
@@ -206,6 +195,13 @@ class RecipeSerializer(serializers.ModelSerializer):
             existing = set(self.fields.keys())
             for field_name in existing - allowed:
                 self.fields.pop(field_name)
+
+    def validate_image(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                'Изображение обязательно для заполнения.'
+            )
+        return value
 
     def get_ingredients(self, obj):
         ingredients = RecipeIngredient.objects.filter(recipe=obj.id)
@@ -239,6 +235,7 @@ class CreateRecipeSerializer(RecipeSerializer):
             'cooking_time',
         )
 
+    image = Base64ImageField(required=True, allow_null=False)
     ingredients = RecipeIngredientCreateSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
@@ -249,6 +246,13 @@ class CreateRecipeSerializer(RecipeSerializer):
         read_only=True,
         default=serializers.CurrentUserDefault(),
     )
+
+    def validate_image(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                'Изображение обязательно для заполнения.'
+            )
+        return value
 
     def validate_tags(self, value):
         tags = []

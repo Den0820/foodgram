@@ -12,13 +12,13 @@ def custom_exception_handler(exc, context):
 
     if isinstance(exc, NotAuthenticated):
         return Response(
-            {"detail": "Учетные данные не были предоставлены."},
+            {'detail': 'Учетные данные не были предоставлены.'},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
     if isinstance(exc, AuthenticationFailed):
         return Response(
-            {"detail": "Ошибка аутентификации. Проверьте токен."},
+            {'detail': 'Ошибка аутентификации. Проверьте токен.'},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 

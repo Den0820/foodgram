@@ -221,7 +221,7 @@ class RecipeViewSet(ModelViewSet):
     )
     def get_link(self, request, pk=None):
         recipe = self.get_object()
-        short_link = f"https://foodgram.example.org/s/{recipe.id}"
+        short_link = f'https://foodgram.example.org/s/{recipe.id}'
         return Response({'short-link': short_link}, status=status.HTTP_200_OK)
 
     @action(
@@ -241,16 +241,16 @@ class RecipeViewSet(ModelViewSet):
                 recipe=recipe
             ).exists():
                 return Response(
-                    {"error": "Рецепт уже находится в списке покупок."},
+                    {'error': 'Рецепт уже находится в списке покупок.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             ShoppingCart.objects.create(user=request.user, recipe=recipe)
             return Response(
                 {
-                    "id": recipe.id,
-                    "name": recipe.name,
-                    "image": recipe.image.url,
-                    "cooking_time": recipe.cooking_time,
+                    'id': recipe.id,
+                    'name': recipe.name,
+                    'image': recipe.image.url,
+                    'cooking_time': recipe.cooking_time,
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -260,7 +260,7 @@ class RecipeViewSet(ModelViewSet):
             ).first()
             if not shopping_cart_entry:
                 return Response(
-                    {"error": "Рецепта нет в списке покупок."},
+                    {'error': 'Рецепта нет в списке покупок.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             shopping_cart_entry.delete()
@@ -278,7 +278,7 @@ class RecipeViewSet(ModelViewSet):
         shopping_cart = ShoppingCart.objects.filter(user=request.user)
         if not shopping_cart.exists():
             return Response(
-                {"detail": "Ваш список покупок пуст."},
+                {'detail': 'Ваш список покупок пуст.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -286,19 +286,19 @@ class RecipeViewSet(ModelViewSet):
         for item in shopping_cart:
             for ingredient in item.recipe.recipe_ingredients.all():
                 content.append(
-                    f"{ingredient.ingredient.name} - "
-                    f"{ingredient.amount} "
-                    f"{ingredient.ingredient.measurement_unit}"
+                    f'{ingredient.ingredient.name} - '
+                    f'{ingredient.amount} '
+                    f'{ingredient.ingredient.measurement_unit}'
 
                 )
 
         response = Response(
-            "\n".join(content),
+            '\n'.join(content),
             content_type='text/plain',
             status=status.HTTP_200_OK,
         )
         response['Content-Disposition'] = 'attachment; filename=' \
-            '"shopping_cart.txt"'
+            'shopping_cart.txt'
 
         return response
 
@@ -319,16 +319,16 @@ class RecipeViewSet(ModelViewSet):
                 recipe=recipe
             ).exists():
                 return Response(
-                    {"error": "Рецепт уже находится в избранном."},
+                    {'error': 'Рецепт уже находится в избранном.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             Favorite.objects.create(user=request.user, recipe=recipe)
             return Response(
                 {
-                    "id": recipe.id,
-                    "name": recipe.name,
-                    "image": recipe.image.url,
-                    "cooking_time": recipe.cooking_time,
+                    'id': recipe.id,
+                    'name': recipe.name,
+                    'image': recipe.image.url,
+                    'cooking_time': recipe.cooking_time,
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -338,7 +338,7 @@ class RecipeViewSet(ModelViewSet):
             ).first()
             if not favorite_entry:
                 return Response(
-                    {"error": "Рецепт отсутствует в избранном."},
+                    {'error': 'Рецепт отсутствует в избранном.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             favorite_entry.delete()

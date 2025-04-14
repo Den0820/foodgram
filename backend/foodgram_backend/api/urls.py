@@ -3,9 +3,9 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     CustomUserViewSet,
-    TagViewSet,
     IngredientViewSet,
     RecipeViewSet,
+    TagViewSet,
 )
 
 router = DefaultRouter()
