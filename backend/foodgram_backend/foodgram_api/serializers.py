@@ -309,10 +309,6 @@ class CreateRecipeSerializer(RecipeSerializer):
             raise serializers.ValidationError(
                 'Ингредиенты или теги не указаны.'
             )
-        # for attr, value in validated_data.items():
-        #     setattr(instance, attr, value)
-        # instance.save()
-        
         instance.tags.clear()
         instance.ingredients.clear()
         instance.tags.set(tags)
