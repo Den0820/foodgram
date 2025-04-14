@@ -128,11 +128,30 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
+class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
+
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ('id', 'amount')
+
+    def validate_amount(self, value):
+        """
+        Проверяет, что количество ингредиента больше минимального значения.
+        """
+        if value <= 0:
+            raise serializers.ValidationError(
+                'Количество ингредиента должно быть больше нуля.'
+            )
+        return value
+
+
 class RecipeIngredientSerializer(serializers.Serializer):
     """
     Сериализатор для обработки ингредиентов в рецепте.
     """
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
@@ -220,7 +239,7 @@ class CreateRecipeSerializer(RecipeSerializer):
             'cooking_time',
         )
 
-    ingredients = RecipeIngredientSerializer(many=True)
+    ingredients = RecipeIngredientCreateSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True,
@@ -251,6 +270,7 @@ class CreateRecipeSerializer(RecipeSerializer):
                     'Этот ингредиент уже добавлен.'
                 )
             ingredients.append(ingredient.get('id'))
+        print(value)
         return value
 
     def validate_cooking_time(self, value):
@@ -284,14 +304,15 @@ class CreateRecipeSerializer(RecipeSerializer):
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients', [])
         tags = validated_data.pop('tags', [])
+
         if not ingredients or not tags:
             raise serializers.ValidationError(
                 'Ингредиенты или теги не указаны.'
             )
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
+        # for attr, value in validated_data.items():
+        #     setattr(instance, attr, value)
+        # instance.save()
+        
         instance.tags.clear()
         instance.ingredients.clear()
         instance.tags.set(tags)
