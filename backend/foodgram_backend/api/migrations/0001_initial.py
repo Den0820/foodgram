@@ -58,8 +58,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('amount', models.PositiveIntegerField()),
-                ('ingredient', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='ingredient_recipes', to='foodgram_api.ingredient')),
-                ('recipe', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='recipe_ingredients', to='foodgram_api.recipe')),
+                ('ingredient', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='ingredient_recipes', to='api.ingredient')),
+                ('recipe', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='recipe_ingredients', to='api.recipe')),
             ],
             options={
                 'verbose_name': 'Ингредиент в рецепте',
@@ -70,18 +70,18 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='recipe',
             name='ingredients',
-            field=models.ManyToManyField(related_name='recipes', through='foodgram_api.RecipeIngredient', to='foodgram_api.Ingredient'),
+            field=models.ManyToManyField(related_name='recipes', through='api.RecipeIngredient', to='api.Ingredient'),
         ),
         migrations.AddField(
             model_name='recipe',
             name='tags',
-            field=models.ManyToManyField(related_name='recipes', to='foodgram_api.Tag'),
+            field=models.ManyToManyField(related_name='recipes', to='api.Tag'),
         ),
         migrations.CreateModel(
             name='Favorite',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('recipe', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='favorited_by', to='foodgram_api.recipe')),
+                ('recipe', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='favorited_by', to='api.recipe')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='favorites', to=settings.AUTH_USER_MODEL)),
             ],
             options={
