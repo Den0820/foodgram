@@ -25,7 +25,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
 # Application definition
 
 INSTALLED_APPS = [
-    'foodgram_api.apps.FoodgramApiConfig',
+    'api.apps.FoodgramApiConfig',
     'users.apps.UsersConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -150,7 +150,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
-    'EXCEPTION_HANDLER': 'foodgram_api.permissions.custom_exception_handler',
+    'EXCEPTION_HANDLER': 'api.permissions.custom_exception_handler',
 }
 
 DJOSER = {
@@ -161,8 +161,8 @@ DJOSER = {
         'user_list': ['rest_framework.permissions.AllowAny'],
     },
     'SERIALIZERS': {
-        'user': 'foodgram_api.serializers.UserProfileSerializer',
-        'user_create': 'foodgram_api.serializers.UserRegistraionSerializer',
-        'current_user': 'foodgram_api.serializers.UserProfileSerializer',
+        'user': 'api.serializers.UserProfileSerializer',
+        'user_create': 'api.serializers.UserRegistraionSerializer',
+        'current_user': 'api.serializers.UserProfileSerializer',
     },
 }
