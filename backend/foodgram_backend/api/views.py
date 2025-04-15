@@ -222,7 +222,7 @@ class RecipeViewSet(ModelViewSet):
     )
     def get_link(self, request, pk=None):
         recipe = self.get_object()
-        short_link = f'{CUR_BASE_URL}s/{recipe.id}'
+        short_link = f'{CUR_BASE_URL}recipes/{recipe.id}'
         return Response({'short-link': short_link}, status=status.HTTP_200_OK)
 
     @action(
