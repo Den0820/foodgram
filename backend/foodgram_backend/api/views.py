@@ -13,6 +13,7 @@ from rest_framework.viewsets import ModelViewSet
 from djoser.views import UserViewSet
 
 from users.models import MyUser, Subscription
+from .constants import CUR_BASE_URL
 from .filters import IngredientFilter, RecipeFilter
 from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .pagination import CustomPagination
@@ -221,7 +222,7 @@ class RecipeViewSet(ModelViewSet):
     )
     def get_link(self, request, pk=None):
         recipe = self.get_object()
-        short_link = f'https://foodgram.example.org/s/{recipe.id}'
+        short_link = f'{CUR_BASE_URL}s/{recipe.id}'
         return Response({'short-link': short_link}, status=status.HTTP_200_OK)
 
     @action(
@@ -297,8 +298,10 @@ class RecipeViewSet(ModelViewSet):
             content_type='text/plain',
             status=status.HTTP_200_OK,
         )
-        response['Content-Disposition'] = 'attachment; filename=' \
+        response['Content-Disposition'] = (
+            'attachment; filename='
             'shopping_cart.txt'
+        )
 
         return response
 

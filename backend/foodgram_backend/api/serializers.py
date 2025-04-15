@@ -271,7 +271,6 @@ class CreateRecipeSerializer(RecipeSerializer):
                     'Этот ингредиент уже добавлен.'
                 )
             ingredients.append(ingredient.get('id'))
-        print(value)
         return value
 
     def validate_cooking_time(self, value):
