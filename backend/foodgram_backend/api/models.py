@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 
 from .constants import (
     MAX_INGRED_LENGTH,
+    MAX_LEN_SL,
     MAX_MU_LENGTH,
     MAX_RN_LENGTH,
     MAX_TEG_LENGTH
@@ -54,6 +55,12 @@ class Recipe(models.Model):
         Ingredient,
         through='RecipeIngredient',
         related_name='recipes'
+    )
+    short_url = models.CharField(
+        max_length=MAX_LEN_SL,
+        unique=True,
+        blank=True,
+        null=True
     )
 
     class Meta:

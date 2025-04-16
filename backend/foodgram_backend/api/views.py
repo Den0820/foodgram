@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from hashids import Hashids
 
 from rest_framework import status
 from rest_framework.decorators import action
@@ -13,7 +14,7 @@ from rest_framework.viewsets import ModelViewSet
 from djoser.views import UserViewSet
 
 from users.models import MyUser, Subscription
-from .constants import CUR_BASE_URL
+from .constants import CUR_BASE_URL, MAX_LEN_SL
 from .filters import IngredientFilter, RecipeFilter
 from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .pagination import CustomPagination
@@ -29,6 +30,8 @@ from .serializers import (
     TagSerializer,
     UserProfileSerializer,
 )
+
+hashids = Hashids(min_length=MAX_LEN_SL, salt="your_secret_salt")
 
 
 class CustomUserViewSet(UserViewSet):
@@ -222,7 +225,10 @@ class RecipeViewSet(ModelViewSet):
     )
     def get_link(self, request, pk=None):
         recipe = self.get_object()
-        short_link = f'{CUR_BASE_URL}recipes/{recipe.id}'
+        if not recipe.short_url:
+            recipe.short_url = hashids.encode(recipe.id)
+            recipe.save()
+        short_link = f'{CUR_BASE_URL}s/{recipe.short_url}'
         return Response({'short-link': short_link}, status=status.HTTP_200_OK)
 
     @action(

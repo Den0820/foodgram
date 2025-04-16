@@ -10,6 +10,12 @@ from .models import (
 )
 
 
+class RecipeIngredientInline(admin.TabularInline):
+    model = RecipeIngredient
+    min_num = 1
+    autocomplete_fields = ('ingredient',)
+
+
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'slug')
@@ -29,6 +35,7 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username')
     list_filter = ('tags',)
     autocomplete_fields = ('tags', 'ingredients')
+    inlines = [RecipeIngredientInline]
 
 
 @admin.register(RecipeIngredient)
