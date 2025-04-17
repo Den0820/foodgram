@@ -97,14 +97,14 @@ class RecipeIngredient(models.Model):
 
     def __str__(self):
         return f'{self.amount} {self.ingredient.name} для {self.recipe.name}'
-    
+
     def delete(self, *args, **kwargs):
         """
         Запрещаем удаление ингредиента, если он последний у рецепта.
         """
         if self.recipe.recipe_ingredients.count() <= 1:
             raise ValidationError(
-                f'Нельзя удалить последний ингредиент у рецепта.'
+                'Нельзя удалить последний ингредиент у рецепта.'
             )
         super().delete(*args, **kwargs)
 
