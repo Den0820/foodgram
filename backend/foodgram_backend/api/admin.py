@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.core.exceptions import ValidationError
 
 from .models import (
     Favorite,
@@ -14,6 +15,15 @@ class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     min_num = 1
     autocomplete_fields = ('ingredient',)
+
+    def has_delete_permission(self, request, obj=None):
+        """
+        Проверяет, можно ли удалить ингредиенты.
+        Если у рецепта меньше двух ингредиентов, запрещаем удаление.
+        """
+        if obj and obj.recipe_ingredients.count() <= 1:
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 @admin.register(Tag)
@@ -42,6 +52,18 @@ class RecipeAdmin(admin.ModelAdmin):
 class RecipeIngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'recipe', 'ingredient', 'amount')
     search_fields = ('recipe__name', 'ingredient__name')
+
+    def delete_queryset(self, request, queryset):
+        """
+        Запрещает удаление последнего ингредиента рецепта через админку.
+        """
+        for obj in queryset:
+            recipe = obj.recipe
+            if recipe.recipe_ingredients.count() <= 1:
+                raise ValidationError(
+                    'Нельзя удалить последний ингредиент рецепта.'
+                )
+        super().delete_queryset(request, queryset)
 
 
 @admin.register(Favorite)

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 from .constants import (
     MAX_INGRED_LENGTH,
@@ -96,6 +97,16 @@ class RecipeIngredient(models.Model):
 
     def __str__(self):
         return f'{self.amount} {self.ingredient.name} для {self.recipe.name}'
+    
+    def delete(self, *args, **kwargs):
+        """
+        Запрещаем удаление ингредиента, если он последний у рецепта.
+        """
+        if self.recipe.recipe_ingredients.count() <= 1:
+            raise ValidationError(
+                f'Нельзя удалить последний ингредиент у рецепта.'
+            )
+        super().delete(*args, **kwargs)
 
 
 class Favorite(models.Model):
