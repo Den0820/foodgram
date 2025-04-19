@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
 from .models import (
@@ -46,6 +46,19 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('tags',)
     autocomplete_fields = ('tags', 'ingredients')
     inlines = [RecipeIngredientInline]
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for obj in formset.deleted_objects:
+            try:
+                obj.delete()
+            except ValidationError as e:
+                messages.warning(request, e.message)
+                return None
+        for instance in instances:
+            instance.user = request.user
+            instance.save()
+        formset.save_m2m()
 
 
 @admin.register(RecipeIngredient)

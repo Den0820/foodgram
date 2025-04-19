@@ -104,7 +104,7 @@ class RecipeIngredient(models.Model):
         """
         if self.recipe.recipe_ingredients.count() <= 1:
             raise ValidationError(
-                'Нельзя удалить последний ингредиент у рецепта.'
+                'Не получилось удалить последний ингредиент у рецепта.'
             )
         super().delete(*args, **kwargs)
 
